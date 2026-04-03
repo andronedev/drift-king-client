@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drift King</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #08080a; color: #fff; font-family: 'Outfit', sans-serif; overflow: hidden; height: 100vh; }
+
+    #loading {
+      position: fixed; inset: 0; z-index: 1000;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: #08080a;
+      overflow: hidden;
+    }
+    #loading::before {
+      content: ''; position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% 120%, rgba(255,50,30,0.06) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 40% at 20% 80%, rgba(255,120,0,0.04) 0%, transparent 60%);
+    }
+    #loading::after {
+      content: ''; position: absolute; inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.008) 2px, rgba(255,255,255,0.008) 4px);
+      pointer-events: none;
+    }
+
+    .load-brand {
+      position: relative; text-align: center; margin-bottom: 48px;
+    }
+    .load-brand h1 {
+      font-family: 'Bebas Neue', sans-serif; font-size: 72px;
+      letter-spacing: 12px; line-height: 1; color: #fff;
+      text-shadow: 0 0 60px rgba(255,50,30,0.15);
+    }
+    .load-brand .load-tag {
+      font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 300;
+      letter-spacing: 6px; text-transform: uppercase;
+      color: rgba(255,255,255,0.25); margin-top: 4px;
+    }
+
+    .load-progress {
+      width: 360px; max-width: 80vw; position: relative;
+    }
+    .load-track {
+      width: 100%; height: 3px;
+      background: rgba(255,255,255,0.06); border-radius: 2px;
+      overflow: hidden;
+    }
+    #progress-bar {
+      height: 100%; width: 0%; border-radius: 2px;
+      background: linear-gradient(90deg, #ff3220, #ff6a00);
+      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 20px rgba(255,50,30,0.3);
+    }
+    #status {
+      margin-top: 14px; color: rgba(255,255,255,0.2); font-size: 12px;
+      font-weight: 300; letter-spacing: 1px; text-align: center;
+    }
+    #error {
+      margin-top: 24px; color: #ff4444; font-size: 12px; font-weight: 400;
+      display: none; max-width: 440px; text-align: center;
+      padding: 12px 20px; border-radius: 8px;
+      background: rgba(255,68,68,0.06); border: 1px solid rgba(255,68,68,0.1);
+    }
+
+    #unity-canvas { width: 100vw; height: 100vh; display: none; }
+
+    .dk-pill {
+      position: fixed; bottom: 14px; left: 14px; z-index: 2147483647;
+      height: 34px; display: flex; align-items: center; gap: 6px; padding: 0 6px;
+      background: rgba(8, 8, 10, 0.85);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 17px;
+      font-family: 'Outfit', sans-serif; font-size: 12px;
+      user-select: none; pointer-events: auto;
+      transition: opacity 0.3s;
+    }
+    .dk-pill:hover { opacity: 1 !important; }
+    .dk-pill-item {
+      padding: 3px 8px; border-radius: 12px;
+      color: rgba(255,255,255,0.45); font-weight: 400;
+      display: flex; align-items: center; gap: 5px;
+      transition: background 0.15s; white-space: nowrap;
+    }
+    .dk-pill-item b { color: rgba(255,255,255,0.8); font-weight: 500; }
+    .dk-pill-item.clickable { cursor: pointer; }
+    .dk-pill-item.clickable:hover { background: rgba(255,255,255,0.06); }
+    .dk-pill-forced {
+      color: #ff6a00; font-weight: 500; font-size: 11px;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .dk-pill-forced::before {
+      content: ''; width: 5px; height: 5px; border-radius: 50%;
+      background: #ff6a00; box-shadow: 0 0 6px rgba(255,106,0,0.5);
+    }
+    .dk-pill-sep {
+      width: 1px; height: 14px; background: rgba(255,255,255,0.08);
+      flex-shrink: 0;
+    }
+
+    .dk-dropdown {
+      position: fixed; bottom: 54px; left: 14px; z-index: 2147483647;
+      background: rgba(14, 14, 18, 0.97);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px; min-width: 240px;
+      max-height: 60vh; overflow-y: auto;
+      display: none; flex-direction: column;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.02);
+      pointer-events: auto;
+      animation: dk-drop 0.2s ease-out;
+      overscroll-behavior: contain;
+    }
+    @keyframes dk-drop { from { opacity: 0; transform: translateY(6px); } }
+
+    .dk-dropdown-title {
+      padding: 14px 16px 10px; font-size: 11px; font-weight: 500;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: rgba(255,255,255,0.2);
+    }
+    .dk-dropdown-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 16px; cursor: pointer;
+      font-size: 13px; font-weight: 400; color: rgba(255,255,255,0.55);
+      transition: all 0.12s; position: relative;
+    }
+    .dk-dropdown-item:hover {
+      background: rgba(255,255,255,0.03);
+      color: rgba(255,255,255,0.9);
+    }
+    .dk-dropdown-item .dk-flag { font-size: 16px; width: 22px; text-align: center; }
+    .dk-dropdown-item .dk-code { width: 32px; font-weight: 500; color: rgba(255,255,255,0.3); font-size: 11px; text-transform: uppercase; }
+    .dk-dropdown-item .dk-name { flex: 1; }
+    .dk-dropdown-item.active {
+      color: #ff6a00;
+    }
+    .dk-dropdown-item.active::after {
+      content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+      width: 3px; height: 16px; border-radius: 0 2px 2px 0;
+      background: #ff6a00;
+    }
+
+    .dk-dropdown-auto {
+      padding: 10px 16px; cursor: pointer;
+      border-top: 1px solid rgba(255,255,255,0.04);
+      font-size: 12px; color: rgba(255,255,255,0.25); font-weight: 400;
+      transition: all 0.12s;
+    }
+    .dk-dropdown-auto:hover { background: rgba(255,255,255,0.02); color: rgba(255,255,255,0.5); }
+
+    .dk-toast {
+      position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+      z-index: 2147483647; pointer-events: none;
+      background: rgba(10,10,12,0.95); backdrop-filter: blur(12px);
+      color: rgba(255,255,255,0.85);
+      font: 500 13px/1.4 'Outfit', sans-serif; padding: 10px 24px;
+      border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      white-space: pre-line; text-align: center;
+      animation: dk-toastIn 0.2s ease-out;
+    }
+    @keyframes dk-toastIn { from { opacity: 0; transform: translateX(-50%) translateY(8px); } }
+
+    .dk-dropdown::-webkit-scrollbar { width: 4px; }
+    .dk-dropdown::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 2px; }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <div class="load-brand">
+      <h1>DRIFT KING</h1>
+      <div class="load-tag">Custom Client</div>
+    </div>
+    <div class="load-progress">
+      <div class="load-track">
+        <div id="progress-bar"></div>
+      </div>
+    </div>
+    <div id="status">Initializing</div>
+    <div id="error"></div>
+  </div>
+
+  <canvas id="unity-canvas" tabindex="-1"></canvas>
+
+  <script src="regionswitcher.js"></script>
+  <script src="macros.js"></script>
+  <script src="loader.js"></script>
+</body>
+</html>
