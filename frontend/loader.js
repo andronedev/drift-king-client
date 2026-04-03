@@ -24,32 +24,42 @@
   function showError(msg) { errorEl.textContent = msg; errorEl.style.display = 'block'; }
 
   function openCache() {
-    return new Promise((resolve, reject) => {
-      const req = indexedDB.open(CACHE_DB, CACHE_VERSION);
-      req.onupgradeneeded = () => {
-        const db = req.result;
-        if (!db.objectStoreNames.contains(CACHE_STORE)) db.createObjectStore(CACHE_STORE);
-      };
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
+    return new Promise((resolve) => {
+      try {
+        const req = indexedDB.open(CACHE_DB, CACHE_VERSION);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains(CACHE_STORE)) db.createObjectStore(CACHE_STORE);
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => resolve(null);
+      } catch (e) {
+        resolve(null);
+      }
     });
   }
 
   async function getCached(db, key) {
+    if (!db) return null;
     return new Promise((resolve) => {
-      const tx = db.transaction(CACHE_STORE, 'readonly');
-      const req = tx.objectStore(CACHE_STORE).get(key);
-      req.onsuccess = () => resolve(req.result || null);
-      req.onerror = () => resolve(null);
+      try {
+        const tx = db.transaction(CACHE_STORE, 'readonly');
+        const req = tx.objectStore(CACHE_STORE).get(key);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => resolve(null);
+      } catch (e) { resolve(null); }
     });
   }
 
   async function setCache(db, key, data) {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(CACHE_STORE, 'readwrite');
-      tx.objectStore(CACHE_STORE).put(data, key);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
+    if (!db) return;
+    return new Promise((resolve) => {
+      try {
+        const tx = db.transaction(CACHE_STORE, 'readwrite');
+        tx.objectStore(CACHE_STORE).put(data, key);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => resolve();
+      } catch (e) { resolve(); }
     });
   }
 

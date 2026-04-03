@@ -18,16 +18,25 @@ No game files are bundled — assets are downloaded from official servers on fir
 - **Frameless window** — Clean borderless look on macOS (hidden inset title bar)
 - **Fly Macro** — Hold `F` to fly
 
-## Getting Started
+## Install
+
+### Download (recommended)
+
+Grab the latest release from the [**Releases**](https://github.com/andronedev/drift-king-client/releases/latest) page:
+
+- **macOS** — `Drift.King-x.x.x.dmg` → open, drag to Applications
+- **Windows** — `Drift.King.Setup.x.x.x.exe` → run the installer
+
+First launch downloads ~30MB of game data. Subsequent launches load from cache instantly.
+
+### Build from source
 
 ```bash
-git clone https://github.com/andronedev/drifted.git
-cd drifted/app
+git clone https://github.com/andronedev/drift-king-client.git
+cd drift-king-client
 npm install
 npm start
 ```
-
-First launch downloads ~30MB of game data. Subsequent launches load from cache instantly.
 
 ## Build
 
