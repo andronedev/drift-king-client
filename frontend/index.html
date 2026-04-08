@@ -168,6 +168,52 @@
 
     .dk-dropdown::-webkit-scrollbar { width: 4px; }
     .dk-dropdown::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 2px; }
+
+    .dk-wrap-overlay {
+      position: fixed; inset: 0; z-index: 2147483646;
+      pointer-events: none; display: none;
+      background-position: center; background-size: cover;
+      mix-blend-mode: soft-light;
+    }
+
+    .dk-wrap-panel {
+      position: fixed; bottom: 54px; right: 14px; z-index: 2147483647;
+      display: none; width: 280px; padding: 14px;
+      background: rgba(14, 14, 18, 0.97);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .dk-wrap-title { font-size: 12px; color: rgba(255,255,255,0.7); margin-bottom: 10px; }
+    .dk-wrap-note { font-size: 11px; color: rgba(255,255,255,0.35); margin-top: 8px; }
+    .dk-wrap-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .dk-wrap-btn {
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.03);
+      color: rgba(255,255,255,0.8);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .dk-wrap-btn:hover { background: rgba(255,255,255,0.08); }
+    .dk-wrap-slider { width: 100%; margin-top: 8px; }
+    .dk-wrap-toggle {
+      position: fixed; bottom: 14px; right: 14px; z-index: 2147483647;
+      height: 34px; padding: 0 11px;
+      display: flex; align-items: center; gap: 6px;
+      border-radius: 17px;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(8, 8, 10, 0.85);
+      color: rgba(255,255,255,0.8);
+      font-size: 12px;
+      font-family: 'Outfit', sans-serif;
+      cursor: pointer;
+      user-select: none;
+    }
+    .dk-wrap-toggle:hover { background: rgba(25,25,30,0.9); }
   </style>
 </head>
 <body>
@@ -189,6 +235,7 @@
 
   <script src="regionswitcher.js"></script>
   <script src="macros.js"></script>
+  <script src="customwraps.js"></script>
   <script src="loader.js"></script>
 </body>
 </html>

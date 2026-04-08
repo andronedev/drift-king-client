@@ -17,6 +17,7 @@ No game files are bundled — assets are downloaded from official servers on fir
 - **Chromium WebView** — Full GPU-accelerated rendering via Electron
 - **Frameless window** — Clean borderless look on macOS (hidden inset title bar)
 - **Fly Macro** — Hold `F` to fly
+- **Custom Wrap Overlay (single-player)** — Upload your own wrap image as a local visual effect
 
 ## Install
 
