@@ -2,7 +2,7 @@
 <img width="1514" height="951" alt="image" src="https://github.com/user-attachments/assets/e8ac3558-a112-4420-8268-33784d3ce3c3" />
 
 
-A lightweight desktop client for [Drift King](https://www.drifted.com/drift-king/) with a built-in **region switcher**.
+A lightweight desktop client for [Drift King](https://www.drifted.com/drift-king/) with a built-in **region switcher** and **Fly macro**.
 
 No game files are bundled — assets are downloaded from official servers on first launch and cached locally.
 
