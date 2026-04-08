@@ -1,4 +1,4 @@
-# Drift King — Custom Client
+# Drift King Launcher
 <img width="1514" height="951" alt="image" src="https://github.com/user-attachments/assets/e8ac3558-a112-4420-8268-33784d3ce3c3" />
 
 
