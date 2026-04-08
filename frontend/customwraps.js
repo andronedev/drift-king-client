@@ -3,12 +3,36 @@
 
   var WRAP_IMAGE_KEY = 'dk.customWrapImage';
   var WRAP_OPACITY_KEY = 'dk.customWrapOpacity';
+  var DEFAULT_OPACITY = 0.2;
+  var MIN_OPACITY = 0.05;
+  var MAX_OPACITY = 1;
+  var MAX_WRAP_FILE_BYTES = 1024 * 1024;
+  var MAX_WRAP_DATA_URL_LENGTH = 2 * 1024 * 1024;
   var panelOpen = false;
   var overlay;
+  var overlayImage;
   var panel;
+  var saveOpacityTimer = null;
+  var ALLOWED_MIME_TYPES = [
+    'image/png',
+    'image/jpeg',
+    'image/gif',
+    'image/webp',
+    'image/bmp'
+  ];
 
   function isOnlineRoomActive() {
-    return !!(window.__dkInfo && window.__dkInfo.room && window.__dkInfo.room !== '\u2014');
+    if (!window.__dkInfo) return false;
+    var room = window.__dkInfo.room;
+    return typeof room === 'string' && room.trim() !== '';
+  }
+
+  function isSafeWrapImage(value) {
+    if (typeof value !== 'string') return false;
+    var match = value.match(/^data:(image\/[^;]+);base64,([a-zA-Z0-9+/=]+)$/);
+    if (!match) return false;
+    if (value.length > MAX_WRAP_DATA_URL_LENGTH) return false;
+    return ALLOWED_MIME_TYPES.indexOf(match[1].toLowerCase()) !== -1;
   }
 
   function showToast(msg) {
@@ -24,11 +48,11 @@
   }
 
   function setWrap(imageUrl, opacity) {
-    if (!imageUrl) {
+    if (!imageUrl || !isSafeWrapImage(imageUrl) || isOnlineRoomActive()) {
       overlay.style.display = 'none';
       return;
     }
-    overlay.style.backgroundImage = 'url("' + imageUrl.replace(/"/g, '%22') + '")';
+    overlayImage.src = imageUrl;
     overlay.style.opacity = String(opacity);
     overlay.style.display = 'block';
   }
@@ -42,12 +66,26 @@
   function loadOpacity() {
     var raw = localStorage.getItem(WRAP_OPACITY_KEY);
     var value = Number(raw);
-    return Number.isFinite(value) && value >= 0.05 && value <= 1 ? value : 0.2;
+    return Number.isFinite(value) && value >= MIN_OPACITY && value <= MAX_OPACITY
+      ? value
+      : DEFAULT_OPACITY;
+  }
+
+  function applySavedWrap() {
+    var image = localStorage.getItem(WRAP_IMAGE_KEY);
+    if (!image || !isSafeWrapImage(image)) {
+      overlay.style.display = 'none';
+      return;
+    }
+    setWrap(image, loadOpacity());
   }
 
   function buildUI() {
     overlay = document.createElement('div');
     overlay.className = 'dk-wrap-overlay';
+    overlayImage = document.createElement('img');
+    overlayImage.alt = '';
+    overlay.appendChild(overlayImage);
     document.body.appendChild(overlay);
 
     panel = document.createElement('div');
@@ -55,7 +93,7 @@
     panel.innerHTML =
       '<div class="dk-wrap-title">Custom Wrap (Single-player)</div>' +
       '<button class="dk-wrap-btn" id="dk-wrap-upload">Upload image</button>' +
-      '<input class="dk-wrap-slider" id="dk-wrap-opacity" type="range" min="0.05" max="1" step="0.05">' +
+      '<input class="dk-wrap-slider" id="dk-wrap-opacity" type="range" min="' + MIN_OPACITY + '" max="' + MAX_OPACITY + '" step="0.05">' +
       '<div class="dk-wrap-actions">' +
         '<button class="dk-wrap-btn" id="dk-wrap-clear">Disable</button>' +
       '</div>' +
@@ -64,7 +102,7 @@
 
     var toggle = document.createElement('button');
     toggle.className = 'dk-wrap-toggle';
-    toggle.textContent = '\u{1F3A8} Wrap';
+    toggle.textContent = '\uD83C\uDFA8 Wrap';
     document.body.appendChild(toggle);
 
     var fileInput = document.createElement('input');
@@ -78,7 +116,8 @@
     opacityInput.value = String(savedOpacity);
 
     var savedImage = localStorage.getItem(WRAP_IMAGE_KEY);
-    if (savedImage) setWrap(savedImage, savedOpacity);
+    if (savedImage && isSafeWrapImage(savedImage)) setWrap(savedImage, savedOpacity);
+    else localStorage.removeItem(WRAP_IMAGE_KEY);
 
     toggle.addEventListener('click', function (e) {
       e.stopPropagation();
@@ -110,14 +149,25 @@
         showToast('Leave the online room before applying a custom wrap.');
         return;
       }
+      if (file.size > MAX_WRAP_FILE_BYTES) {
+        showToast('Image is too large. Please use a file under 1MB.');
+        fileInput.value = '';
+        return;
+      }
       var reader = new FileReader();
       reader.onload = function () {
         var image = typeof reader.result === 'string' ? reader.result : '';
-        if (!image) return;
+        if (!isSafeWrapImage(image)) {
+          showToast('Please choose a valid image file.');
+          return;
+        }
         var opacity = Number(opacityInput.value);
         setWrap(image, opacity);
         saveWrap(image, opacity);
         showToast('Custom wrap applied.');
+      };
+      reader.onerror = function () {
+        showToast('Failed to read image file.');
       };
       reader.readAsDataURL(file);
       fileInput.value = '';
@@ -127,7 +177,10 @@
       var image = localStorage.getItem(WRAP_IMAGE_KEY);
       var opacity = Number(opacityInput.value);
       if (image) setWrap(image, opacity);
-      saveWrap(image, opacity);
+      if (saveOpacityTimer) clearTimeout(saveOpacityTimer);
+      saveOpacityTimer = setTimeout(function () {
+        saveWrap(image, opacity);
+      }, 250);
     });
 
     panel.querySelector('#dk-wrap-clear').addEventListener('click', function () {
@@ -136,11 +189,24 @@
       showToast('Custom wrap disabled.');
     });
 
-    setInterval(function () {
-      if (isOnlineRoomActive() && overlay.style.display !== 'none') {
-        overlay.style.display = 'none';
+    if (window.__dkInfo) {
+      var info = window.__dkInfo;
+      var roomValue = info.room;
+      try {
+        Object.defineProperty(info, 'room', {
+          configurable: true,
+          enumerable: true,
+          get: function () { return roomValue; },
+          set: function (value) {
+            roomValue = value;
+            if (isOnlineRoomActive()) overlay.style.display = 'none';
+            else applySavedWrap();
+          }
+        });
+      } catch (e) {
+        console.warn('[DK] Unable to watch room changes for custom wraps:', e);
       }
-    }, 1000);
+    }
   }
 
   if (document.body) buildUI();
